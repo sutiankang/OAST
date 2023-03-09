@@ -1,0 +1,7 @@
+opencv-python
+tqdm
+einops
+matplotlib
+termcolor
+timm
+numpy
