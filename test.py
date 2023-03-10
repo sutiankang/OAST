@@ -23,12 +23,12 @@ def get_argparse():
 
     parser.add_argument("--data-dir", type=str, default="your/data/path", help="dataset path")
     parser.add_argument("--save_dir", type=str, default="runs", help="save test data dir")
-    parser.add_argument("--pretrained", type=str, default="", help="use pretrained weights")
+    parser.add_argument("--pretrained", type=str, default=None, help="use pretrained weights")
 
     parser.add_argument("--test_datasets", type=str, nargs="+", default=["DAVIS-2016", "FBMS"])
-    parser.add_argument("--weights", type=str, nargs="+", default="your/weight/path")
-    parser.add_argument("--model_scale", type=str, default="xxs", choices=["xxs", "xs", "s"], help="model size")
-    parser.add_argument("--dropout", default=0, type=float, help="before segmentation head add dropout")
+    parser.add_argument("--weights", type=str, nargs="+", default=None)
+    parser.add_argument("--model_scale", type=str, default=None, choices=["xxs", "xs", "s"], help="model size")
+    parser.add_argument("--dropout", default=None, type=float, help="before segmentation head add dropout")
 
     return parser.parse_args()
 
