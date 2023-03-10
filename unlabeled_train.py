@@ -33,9 +33,9 @@ def get_parser():
     parser = argparse.ArgumentParser("Unlabeled Training")
 
     # common config
-    parser.add_argument("--start_epoch", type=int, default=1, help="start epcoh")
-    parser.add_argument("--start_adv", type=int, default=1, help="start adversarial training")
-    parser.add_argument("--epochs", type=int, default=30, help="training epochs")
+    parser.add_argument("--start_epoch", type=int, default=None)
+    parser.add_argument("--start_adv", type=int, default=None)
+    parser.add_argument("--epochs", type=int, default=None, help="training epochs")
     parser.add_argument("-b", "--batch_size", type=int, default=2, help="batch size for DataLoader")
     parser.add_argument("--lr_g", type=float, default=1e-4, help="learning rate for single gpu")
     parser.add_argument("--lr_d", type=float, default=1e-4, help="discriminator learning rate")
@@ -43,10 +43,10 @@ def get_parser():
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument("--device", type=str, default="cuda", choices=["cuda", "cpu"], help="choose using device")
     parser.add_argument("--print_freq", default=50, type=int, help="print information frequency")
-    parser.add_argument("--data_dir", type=str, default="your/data/path", help="dataset path")
+    parser.add_argument("--data_dir", type=str, default=None, help="dataset path")
 
     parser.add_argument("--experiment", type=str, default="offline_training", help="experiment name")
-    parser.add_argument("--model_scale", type=str, default="s", choices=["xxs", "xs", "s"], help="model size")
+    parser.add_argument("--model_scale", type=str, default=None, choices=["xxs", "xs", "s"], help="model size")
     parser.add_argument("--labeled_datasets", type=str, nargs="+", default=['YouTubeVOS-2018', 'DAVIS-2016'])
     parser.add_argument("--unlabeled_datasets", type=str, nargs="+", default=['Youtube-objects'])
     parser.add_argument("--test_datasets", type=str, nargs="+", default=['DAVIS-2016', 'FBMS'])
@@ -59,17 +59,17 @@ def get_parser():
     parser.add_argument("--lambda_adv", type=float, default=1e-4)
 
     # data augmentation
-    parser.add_argument("--mean", type=list, default=[0.485, 0.456, 0.406], help="imagenet mean")
-    parser.add_argument("--std", type=list, default=[0.229, 0.224, 0.225], help="imagenet std")
+    parser.add_argument("--mean", type=list, default=None)
+    parser.add_argument("--std", type=list, default=None)
     parser.add_argument("--youtube_stride", type=int, default=10, help="youtube dataset sample")
 
     # training strategy
     parser.add_argument("--sync-bn", action="store_true", default=False,
                         help="distributed training merge batch_norm layer mean and std")
-    parser.add_argument("--pretrained", type=str, default="your/pretrained/path", help="backbone pretrained weight")
-    parser.add_argument("--dropout", default=0, type=float, help="before segmentation head add dropout")
-    parser.add_argument("--finetune", type=str, default="", help="finetune weight path")
-    parser.add_argument('--resume', default='', help='resume from checkpoint')
+    parser.add_argument("--pretrained", type=str, default=None, help="backbone pretrained weight")
+    parser.add_argument("--dropout", default=None, type=float, help="before segmentation head add dropout")
+    parser.add_argument("--finetune", type=str, default=None, help="finetune weight path")
+    parser.add_argument('--resume', default=None, help='resume from checkpoint')
 
     return parser.parse_args()
 
@@ -105,7 +105,7 @@ def main(args):
     model_D.to(device)
 
     criterion_seg = create_iou_bce_loss
-    criterion_adv = nn.BCELoss()
+    criterion_adv = nn.BCEWithLogitsLoss()
 
     if args.finetune:
         checkpoint = torch.load(args.finetune, map_location='cpu')
@@ -149,8 +149,8 @@ def main(args):
     model_without_ddp = model
     model_D_without_ddp = model_D
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-        model_D = torch.nn.parallel.DistributedDataParallel(model_D, device_ids=[args.gpu])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], broadcast_buffers=False)
+        model_D = torch.nn.parallel.DistributedDataParallel(model_D, device_ids=[args.gpu], broadcast_buffers=False)
         model_without_ddp = model.module
         model_D_without_ddp = model_D.module
 
@@ -176,6 +176,7 @@ def main(args):
 
     schedule_g = lr_scheduler.StepLR(optimizer_g, step_size=10, gamma=0.1)
     schedule_d = lr_scheduler.StepLR(optimizer_d, step_size=10, gamma=0.1)
+    scaler = torch.cuda.amp.GradScaler()
 
     if args.resume:
         if args.resume.startswith('https'):
@@ -242,8 +243,9 @@ def main(args):
             labeled_image, labeled_flow, labeled_mask = labeled_image.to(device), labeled_flow.to(device), labeled_mask.to(device)
 
             optimizer_g.zero_grad()
-            labeled_predict, labeled_feature_map = model(labeled_image, labeled_flow)
-            loss_labeled = criterion_seg(labeled_predict, labeled_mask)
+            with torch.cuda.amp.autocast(enabled=scaler is not None):
+                labeled_predict, labeled_feature_map = model(labeled_image, labeled_flow)
+                loss_labeled = criterion_seg(labeled_predict, labeled_mask)
             precise_output = torch.sigmoid(labeled_predict).cpu().detach().numpy()
             precise_output[precise_output >= 0.5] = 1
             precise_output[precise_output < 0.5] = 0
@@ -253,8 +255,10 @@ def main(args):
             train_iou_record.update(iou)
 
             if epoch < args.start_adv:
-                loss_labeled.backward()
-                optimizer_g.step()
+                scaler.scale(loss_labeled).backward()
+                scaler.step(optimizer_g)
+                scaler.update()
+
                 loss_value = reduce_value(loss_labeled, average=True).item()
                 loss_labeled_record.update(loss_value)
 
@@ -274,28 +278,33 @@ def main(args):
                 unlabeled_image, unlabeled_flow = unlabeled_batch['image'], unlabeled_batch['flow']
                 unlabeled_image, unlabeled_flow = unlabeled_image.to(device), unlabeled_flow.to(device)
 
-                _, unlabeled_feature_map = model(unlabeled_image, unlabeled_flow)
-
                 optimizer_d.zero_grad()
                 for param in model_D.parameters():
                     param.requires_grad = False
 
-                adv_g = criterion_adv(model_D(unlabeled_feature_map), torch.ones(args.batch_size, device=device))
-                loss_labeled += args.lambda_adv * adv_g
+                with torch.cuda.amp.autocast(enabled=scaler is not None):
+                    _, unlabeled_feature_map = model(unlabeled_image, unlabeled_flow)
+                    adv_g = criterion_adv(model_D(unlabeled_feature_map), torch.ones(args.batch_size, device=device))
+                    loss_labeled += args.lambda_adv * adv_g
                 loss_value = reduce_value(loss_labeled, average=True).item()
                 loss_labeled_record.update(loss_value)
-                loss_labeled.backward()
-                optimizer_g.step()
+
+                scaler.scale(loss_labeled).backward()
+                scaler.step(optimizer_g)
+                scaler.update()
 
                 for param in model_D.parameters():
                     param.requires_grad = True
-                real_loss = criterion_adv(model_D(labeled_feature_map.detach()), torch.ones(args.batch_size, device=device))
-                fake_loss = criterion_adv(model_D(unlabeled_feature_map.detach()), torch.zeros(args.batch_size, device=device))
-                d_loss = 0.5 * args.lambda_adv * (real_loss + fake_loss)
+                with torch.cuda.amp.autocast(enabled=scaler is not None):
+                    real_loss = criterion_adv(model_D(labeled_feature_map.detach()), torch.ones(args.batch_size, device=device))
+                    fake_loss = criterion_adv(model_D(unlabeled_feature_map.detach()), torch.zeros(args.batch_size, device=device))
+                    d_loss = 0.5 * args.lambda_adv * (real_loss + fake_loss)
                 loss_value = reduce_value(d_loss, average=True).item()
                 loss_d_record.update(loss_value)
-                d_loss.backward()
-                optimizer_d.step()
+
+                scaler.scale(d_loss).backward()
+                scaler.step(optimizer_d)
+                scaler.update()
 
             if (idx % args.print_freq == 0 or epoch == args.epochs) and is_main_process():
                 if epoch >= args.start_adv:
