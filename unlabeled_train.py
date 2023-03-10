@@ -140,8 +140,8 @@ def main(args):
     unlabeled_batch_sampler = BatchSampler(unlabeled_sampler, args.batch_size, drop_last=True)
     unlabeled_data_loader = DataLoader(unlabeled_dataset, batch_sampler=unlabeled_batch_sampler, num_workers=8, pin_memory=True)
 
-    test_data_loader = DataLoader(test_dataset, batch_size=args.batch_size, sampler=test_sampler, drop_last=False,
-                                   pin_memory=True, num_workers=8)
+    test_data_loader = DataLoader(test_dataset, batch_size=1, sampler=test_sampler, drop_last=False,
+                                  pin_memory=True, num_workers=8)
 
     if args.distributed and args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
