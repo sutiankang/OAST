@@ -91,7 +91,7 @@ CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nproc_per_node=2 o
 
 ## Test
 
-- The test datasets can be downloaded from [DAVIS-2016](https://davischallenge.org/davis2017/code.html), [FBMS](https://lmb.informatik.uni-freiburg.de/resources/datasets/moseg.en.html), [DAVSOD](https://github.com/DengPingFan/DAVSOD), [ViSal](https://github.com/DengPingFan/DAVSOD), [MCL](https://github.com/DengPingFan/DAVSOD). Note that we use ```DAVSOD``` repository to replace ```ViSal``` and ```MCL``` due to it provides these two dataset download way. Besides, the stucture must be the same as training example.
+- The test datasets can be downloaded from [DAVIS-2016](https://davischallenge.org/davis2017/code.html), [FBMS](https://lmb.informatik.uni-freiburg.de/resources/datasets/moseg.en.html), [DAVSOD](https://github.com/DengPingFan/DAVSOD), [MCL](https://github.com/DengPingFan/DAVSOD). Note that we use ```DAVSOD``` repository to replace ```MCL``` due to it provides these two dataset download way. Besides, the stucture must be the same as training example.
 
 -   We can produce segmentation results in ```test.py```.
 ```
