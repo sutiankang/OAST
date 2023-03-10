@@ -4,7 +4,7 @@
 The training and testing experiments are conducted using PyTorch 1.10.1 with two GeForce RTX 2080Ti GPUs with 11GB Memory.
 - Python 3.8
 ```
-conda create -n mp-vos python=3.8
+conda create -n oast python=3.8
 ```
 Other minor Python modules can be installed by running
 ```
