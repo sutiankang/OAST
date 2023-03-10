@@ -33,19 +33,19 @@ def get_parser():
     parser = argparse.ArgumentParser("Online Finetuning")
 
     # common config
-    parser.add_argument("--start_epoch", type=int, default=1, help="start epcoh")
-    parser.add_argument("--epochs", type=int, default=10, help="training epochs")
+    parser.add_argument("--start_epoch", type=int, default=None, help="start epcoh")
+    parser.add_argument("--epochs", type=int, default=None, help="training epochs")
     parser.add_argument("-b", "--batch_size", type=int, default=2, help="batch size for DataLoader")
-    parser.add_argument("--lr_g", type=float, default=1e-5, help="learning rate for single gpu")
-    parser.add_argument("--lr_d", type=float, default=1e-5, help="discriminator learning rate")
+    parser.add_argument("--lr_g", type=float, default=None, help="learning rate for single gpu")
+    parser.add_argument("--lr_d", type=float, default=None, help="discriminator learning rate")
     parser.add_argument("--img_size", type=int, nargs="+", default=[384, 640], help="training image size")
-    parser.add_argument("--seed", type=int, default=0, help="random seed")
+    parser.add_argument("--seed", type=int, default=None, help="random seed")
     parser.add_argument("--device", type=str, default="cuda", choices=["cuda", "cpu"], help="choose using device")
     parser.add_argument("--print_freq", default=50, type=int, help="print information frequency")
-    parser.add_argument("--data_dir", type=str, default="your/data/path", help="dataset path")
+    parser.add_argument("--data_dir", type=str, default=None, help="dataset path")
 
     parser.add_argument("--experiment", type=str, default="online_finetuning", help="experiment name")
-    parser.add_argument("--model_scale", type=str, default="xxs", choices=["xxs", "xs", "s"], help="model size")
+    parser.add_argument("--model_scale", type=str, default=None, choices=["xxs", "xs", "s"], help="model size")
     parser.add_argument("--test_datasets", type=str, nargs="+", default=['DAVIS-2016', 'FBMS'])
     parser.add_argument("--lambda_adv", type=float, default=1e-4)
 
@@ -56,16 +56,16 @@ def get_parser():
     parser.add_argument("--momentum", type=float, default=0.9, help="sgd momentum parameters")
 
     # data augmentation
-    parser.add_argument("--mean", type=list, default=[0.485, 0.456, 0.406], help="imagenet mean")
-    parser.add_argument("--std", type=list, default=[0.229, 0.224, 0.225], help="imagenet std")
+    parser.add_argument("--mean", type=list, default=None)
+    parser.add_argument("--std", type=list, default=None)
 
     # training strategy
     parser.add_argument("--sync-bn", action="store_true", default=False,
                         help="distributed training merge batch_norm layer mean and std")
-    parser.add_argument("--pretrained", type=str, default="your/pretrained/path", help="backbone pretrained weight")
-    parser.add_argument("--dropout", default=0, type=float, help="before segmentation head add dropout")
-    parser.add_argument("--weight", type=str, default="your/weight/path", help="finetune weight path")
-    parser.add_argument('--resume', default='', help='resume from checkpoint')
+    parser.add_argument("--pretrained", type=str, default=None, help="backbone pretrained weight")
+    parser.add_argument("--dropout", default=None, type=float, help="before segmentation head add dropout")
+    parser.add_argument("--weight", type=str, default=None, help="finetune weight path")
+    parser.add_argument('--resume', default=None, help='resume from checkpoint')
 
     return parser.parse_args()
 
