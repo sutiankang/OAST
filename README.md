@@ -93,4 +93,4 @@ python test.py --data_dir /your/data/path --save_dir /save/reuslts/path --weight
 
 ## Evaluation Metrics
 
-- We use the standard UVOS evaluation toolbox from [DAVIS-2016 benchmark](https://github.com/davisvideochallenge/davis-matlab/tree/davis-2016) and VSOD evaluation toolbox from [DAVSOD benchmark](https://github.com/DengPingFan/DAVSOD). Note that the two toolboxes are from official repositories. 
+- We use the standard UVOS evaluation toolbox from [DAVIS-2016 benchmark](https://github.com/davisvideochallenge/davis-matlab/tree/davis-2016) and VSOD evaluation toolbox from [DAVSOD benchmark](https://github.com/DengPingFan/DAVSOD). Note that the two toolboxes are from official repositories. Notice that we evaluate UVOS metrics with binary segmentation mask and report VSOD metrics with probability segmentation mask under the common practice setting.
