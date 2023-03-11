@@ -60,7 +60,7 @@ The structure of datasets is as follows:
 ```
 
 ### Prepare pretrained backbone
-The pre-trained backbone can be downloaded from [MobileViT-xxs backbone](https://anonymfile.com/NVkll/mobilevit-xxspth.tar) and [MobileViT-s backbone](https://anonymfile.com/OE8WD/mobilevit-spth.tar) and put it into the ```pretrained``` folder.
+The pre-trained backbone can be downloaded from [MobileViT-xxs backbone](https://anonymfile.com/Akm6Y/mobilevit-xxspth.tar) and [MobileViT-s backbone](https://anonymfile.com/LNzAo/mobilevit-spth.tar) and put it into the ```pretrained``` folder.
 
 ### Train
 - First, train the model using the YouTubeVOS-2018, DAVIS-2016 datasets as labeled data and Youtube-objects as unlabeled data.
@@ -89,7 +89,7 @@ python test.py --data_dir /your/data/path --save_dir /save/reuslts/path --weight
 
 ## Final weight
 
-- The final weight can be downloaded from [OAST](https://anonymfile.com/Ka6Pz/online-finetuningbest.pth).
+- The final weight can be downloaded from [OAST](https://anonymfile.com/68Dq9/online-finetunebest.pth).
 
 ## Evaluation Metrics
 
